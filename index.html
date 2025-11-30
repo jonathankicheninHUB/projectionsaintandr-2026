@@ -1,0 +1,644 @@
+import React, { useState } from 'react';
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
+import { TrendingUp, TrendingDown, Users, Award, AlertCircle, Target, Zap, Clock } from 'lucide-react';
+
+// Constantes pour les couleurs du thème Dark/Neon
+const COLORS = ['#06b6d4', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#ef4444', '#3b82f6'];
+const BACKGROUND_COLOR = '#0f172a'; // Dark Slate
+
+// Structure de données historiques (adaptée des données fournies)
+const electionData = {
+  2008: {
+    tour1: [
+      { candidat: 'Eric Fruteau', parti: 'DVG', voix: 9351, pourcentage: 48.39 },
+      { candidat: 'Jean-Paul Virapoullé', parti: 'DVD', voix: 7788, pourcentage: 40.30 },
+      { candidat: 'Emmanuel Seriacaroupin', parti: 'DVG', voix: 2187, pourcentage: 11.32 }
+    ],
+    tour2: [
+      { candidat: 'Eric Fruteau', parti: 'DVG', voix: 13150, pourcentage: 58.30, elu: true, sieges: 34 },
+      { candidat: 'Jean-Paul Virapoullé', parti: 'DVD', voix: 9404, pourcentage: 41.70, sieges: 9 }
+    ],
+    participation: { tour1: 71.07, tour2: 80.45 },
+    votants: { tour1: 20139, tour2: 23069 }
+  },
+  2014: {
+    tour1: [
+      { candidat: 'Jean Paul Virapoullé', parti: 'DVD', voix: 11365, pourcentage: 49.96 },
+      { candidat: 'Claudy Fruteau', parti: 'DVG', voix: 5024, pourcentage: 22.08 },
+      { candidat: 'Joé Bedier', parti: 'DVG', voix: 2753, pourcentage: 12.10 },
+      { candidat: 'Serge Camatchy', parti: 'DVG', voix: 2432, pourcentage: 10.69 },
+      { candidat: 'Jean-François Ramassamy', parti: 'DVD', voix: 845, pourcentage: 3.71 }
+    ],
+    tour2: [
+      { candidat: 'Jean Paul Virapoullé', parti: 'DVD', voix: 15348, pourcentage: 62.57, elu: true, sieges: 37 },
+      { candidat: 'Claudy Fruteau', parti: 'DVG', voix: 5604, pourcentage: 22.84, sieges: 5 },
+      { candidat: 'Joé Bedier', parti: 'DVG', voix: 3575, pourcentage: 14.57, sieges: 3 }
+    ],
+    participation: { tour1: 68.08, tour2: 73.08 },
+    votants: { tour1: 23688, tour2: 25428 }
+  },
+  2020: {
+    tour1: [
+      { candidat: 'Jean-Marie Virapoullé', parti: 'DVD', voix: 5722, pourcentage: 31.47 },
+      { candidat: 'Joé Bedier', parti: 'DVG', voix: 4524, pourcentage: 24.88 },
+      { candidat: 'Eric Fruteau', parti: 'DVG', voix: 3107, pourcentage: 17.09 },
+      { candidat: 'Jean François Ramassamy', parti: 'DVD', voix: 1058, pourcentage: 5.81 },
+      { candidat: 'Serge Antoine Camatchy', parti: 'DVG', voix: 1001, pourcentage: 5.50 },
+      { candidat: 'Sylvie Moutoucomorapoule', parti: 'DVG', voix: 1000, pourcentage: 5.50 }
+    ],
+    tour2: [
+      { candidat: 'Joé Bedier', parti: 'DVG', voix: 10703, pourcentage: 52.16, elu: true, sieges: 34 },
+      { candidat: 'Jean-Marie Virapoullé', parti: 'DVD', voix: 9813, pourcentage: 47.83, sieges: 11 }
+    ],
+    participation: { tour1: 48.06, tour2: 54.84 },
+    votants: { tour1: 18867, tour2: 21656 }
+  }
+};
+
+// Projections 2026 (Intégration de la nouvelle narrative)
+const candidats2026 = [
+  {
+    nom: 'Joé Bedier (Maire)',
+    parti: 'DVG / Majorité',
+    statut: 'Maire sortant',
+    projectionT1: 28, // Projection Premier Tour
+    projectionT2: 54, // Projection Second Tour
+    force: 85,
+    notoriete: 95,
+    ancrage: 80,
+    dynamique: 70,
+    couleur: '#06b6d4', // Neon Cyan
+    analyse: 'Maire sortant avec un bilan à défendre. Bénéficie de la prime au sortant mais doit mobiliser face à une opposition fragmentée.'
+  },
+  {
+    nom: 'J.M. Virapoullé (Opposition)',
+    parti: 'DVD / Alliance',
+    statut: 'Opposant principal',
+    projectionT1: 26,
+    projectionT2: 46,
+    force: 75,
+    notoriete: 90,
+    ancrage: 85,
+    dynamique: 60,
+    couleur: '#8b5cf6', // Electric Purple
+    analyse: 'Chef de file de la famille historique. Son alliance conditionne sa qualification et sa capacité à rassembler les déçus de la majorité.'
+  },
+  {
+    nom: 'L. Virapoullé (RN)',
+    parti: 'RN / Extrême Droite',
+    statut: 'Candidat émergent',
+    projectionT1: 15,
+    projectionT2: null,
+    force: 50,
+    notoriete: 65,
+    ancrage: 40,
+    dynamique: 80,
+    couleur: '#ef4444', // Hot Red
+    analyse: 'Nouveau pôle d\'attraction autour du Rassemblement National. Son score au T1 est clé pour les alliances au T2.'
+  },
+  {
+    nom: 'Eric Fruteau',
+    parti: 'DVG / Ancien Maire',
+    statut: 'Candidat dissident',
+    projectionT1: 10,
+    projectionT2: null,
+    force: 40,
+    notoriete: 75,
+    ancrage: 60,
+    dynamique: 30,
+    couleur: '#f59e0b', // Bright Amber
+    analyse: 'Ancien maire en déclin. Son maintien fragmente le vote DVG et complique la tâche de Joé Bedier.'
+  },
+  {
+    nom: 'Société Civile / Écologie',
+    parti: 'Divers',
+    statut: 'Liste de rupture',
+    projectionT1: 11,
+    projectionT2: null,
+    force: 35,
+    notoriete: 35,
+    ancrage: 30,
+    dynamique: 70,
+    couleur: '#10b981', // Emerald Green
+    analyse: 'Capte le vote protestataire et la volatilité jeune. Leur score total (11%) est un facteur X majeur.'
+  },
+  {
+    nom: 'Autres Oppositions',
+    parti: 'Divers',
+    statut: 'Petits candidats',
+    projectionT1: 10,
+    projectionT2: null,
+    force: 20,
+    notoriete: 30,
+    ancrage: 25,
+    dynamique: 40,
+    couleur: '#ec4899', // Hot Pink
+    analyse: 'Listes non qualifiantes. Leur report de voix est critique entre les deux blocs principaux.'
+  }
+];
+
+// Évolution des familles politiques (DVG vs DVD/Alliances)
+const evolutionPolitique = [
+  { annee: '2008', DVG: 58.30, DVD: 41.70 },
+  { annee: '2014', DVG: 37.41, DVD: 62.57 },
+  { annee: '2020', DVG: 52.16, DVD: 47.83 },
+  { annee: '2026*', DVG: 54, DVD: 46 } // Projection T2
+];
+
+// Évolution de la participation
+const evolutionParticipation = [
+  { annee: '2008', tour1: 71.07, tour2: 80.45 },
+  { annee: '2014', tour1: 68.08, tour2: 73.08 },
+  { annee: '2020', tour1: 48.06, tour2: 54.84 },
+  { annee: '2026*', tour1: 52, tour2: 58 } // Projection
+];
+
+// Analyse des acteurs clés
+const acteursHistorique = [
+  {
+    nom: 'Famille Virapoullé',
+    periodes: [
+      { annee: 2008, candidat: 'Jean-Paul Virapoullé', resultat: 41.70, statut: 'Défaite' },
+      { annee: 2014, candidat: 'Jean Paul Virapoullé', resultat: 62.57, statut: 'Victoire' },
+      { annee: 2020, candidat: 'Jean-Marie Virapoullé', resultat: 47.83, statut: 'Défaite' }
+    ],
+    tendance: 'decline',
+    analyse: 'Après une victoire nette en 2014, perte du pouvoir en 2020. En 2026, l\'alliance est la clé pour revenir.'
+  },
+  {
+    nom: 'Joé Bedier (Maire Sortant)',
+    periodes: [
+      { annee: 2014, candidat: 'Joé Bedier', resultat: 14.57, statut: 'Troisième' },
+      { annee: 2020, candidat: 'Joé Bedier', resultat: 52.16, statut: 'Victoire' }
+    ],
+    tendance: 'rise',
+    analyse: 'Ascension remarquable en 2020. Doit consolider sa majorité et gérer la fragmentation à gauche.'
+  },
+  {
+    nom: 'Base Électorale Démographique',
+    periodes: [
+      { annee: 2008, candidat: 'Électeurs Fidèles (+65 ans)', resultat: 75, statut: 'Forte' },
+      { annee: 2014, candidat: 'Électeurs Fidèles (+65 ans)', resultat: 65, statut: 'Moyenne' },
+      { annee: 2020, candidat: 'Électeurs Fidèles (+65 ans)', resultat: 55, statut: 'Déclin' },
+      { annee: 2026, candidat: 'Électeurs Fidèles (+65 ans)', resultat: 45, statut: 'Faible' }
+    ],
+    tendance: 'decline',
+    analyse: 'Érosion de la base historique (mortalité), forçant les candidats à capter le vote volatil des jeunes et des nouveaux habitants.'
+  }
+];
+
+// Configuration pour l'analyse des blocs politiques (Diagramme en Anneau 2026)
+const blocsPolitiques2026 = [
+    { nom: 'Bloc DVG (Bedier)', pourcentage: 28, couleur: '#06b6d4' },
+    { nom: 'Bloc DVD/Alliance (Virapoullé)', pourcentage: 26, couleur: '#8b5cf6' },
+    { nom: 'Bloc RN / Anti-Système', pourcentage: 15, couleur: '#ef4444' },
+    { nom: 'Fragmentation DVG (Fruteau)', pourcentage: 10, couleur: '#f59e0b' },
+    { nom: 'Nouveaux/Écolo', pourcentage: 11, couleur: '#10b981' },
+    { nom: 'Autres', pourcentage: 10, couleur: '#ec4899' },
+];
+
+
+// Composant principal de l'application
+const App = () => {
+  const [selectedYear, setSelectedYear] = useState('2020');
+  const [viewMode, setViewMode] = useState('projection2026'); // Démarrage sur la projection 2026
+
+  // Fonction utilitaire pour les tooltips
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      return (
+        <div className="p-4 bg-slate-900 border border-white/30 rounded-lg shadow-xl text-white">
+          <p className="font-bold text-lg mb-1">{label}</p>
+          <p className="text-sm">{data.candidat} ({data.parti})</p>
+          <p className="text-xl font-extrabold" style={{ color: payload[0].color }}>{payload[0].value.toFixed(2)}%</p>
+          <p className="text-xs text-gray-400 mt-1">Voix : {data.voix}</p>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  // 1. Vue d'ensemble historique
+  const renderOverview = () => (
+    <div className="space-y-8 animate-fadeIn">
+      <div className="bg-gradient-to-br from-purple-600 via-pink-600 to-red-600 text-white p-8 rounded-3xl shadow-2xl transform hover:scale-[1.01] transition-all duration-300">
+        <h2 className="text-4xl font-extrabold mb-3 animate-slideDown">🎯 Synthèse Historique</h2>
+        <p className="text-purple-100 text-lg">Aperçu des tendances électorales 2008-2020</p>
+      </div>
+
+      {/* Cartes de statistiques clés */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-gradient-to-br from-cyan-600 to-teal-700 p-6 rounded-2xl shadow-xl transform hover:scale-105 transition-all duration-300 animate-slideRight">
+          <div className="flex items-center gap-3 mb-3">
+            <Award className="text-white animate-bounce" size={32} />
+            <h3 className="font-bold text-white text-lg">Maire actuel (2020)</h3>
+          </div>
+          <p className="text-3xl font-bold text-white mb-2">Joé Bedier</p>
+          <p className="text-cyan-100 font-semibold">Divers gauche - 52,16%</p>
+        </div>
+
+        <div className="bg-gradient-to-br from-pink-600 to-rose-700 p-6 rounded-2xl shadow-xl transform hover:scale-105 transition-all duration-300 animate-slideUp">
+          <div className="flex items-center gap-3 mb-3">
+            <TrendingDown className="text-white animate-pulse" size={32} />
+            <h3 className="font-bold text-white text-lg">Participation 2020 (T2)</h3>
+          </div>
+          <p className="text-3xl font-bold text-white mb-2">54,84%</p>
+          <p className="text-pink-100 font-semibold">Baisse de 18 points vs 2014 ⚠️</p>
+        </div>
+
+        <div className="bg-gradient-to-br from-indigo-600 to-purple-700 p-6 rounded-2xl shadow-xl transform hover:scale-105 transition-all duration-300 animate-slideLeft">
+          <div className="flex items-center gap-3 mb-3">
+            <Users className="text-white animate-pulse" size={32} />
+            <h3 className="font-bold text-white text-lg">Volatilité Jeunesse</h3>
+          </div>
+          <p className="text-3xl font-bold text-white mb-2">Facteur X</p>
+          <p className="text-indigo-100 font-semibold">Clé pour 2026</p>
+        </div>
+      </div>
+
+      {/* Graphique de la participation */}
+      <div className="bg-gradient-to-br from-slate-700 to-slate-800 p-8 rounded-2xl shadow-2xl animate-fadeIn border-t-4 border-yellow-500">
+        <h3 className="text-2xl font-bold mb-6 text-white">📊 Évolution de la participation électorale</h3>
+        <ResponsiveContainer width="100%" height={320}>
+          <LineChart data={evolutionParticipation}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#ffffff30" />
+            <XAxis dataKey="annee" stroke="#fff" />
+            <YAxis domain={[0, 100]} stroke="#fff" />
+            <Tooltip contentStyle={{backgroundColor: BACKGROUND_COLOR, border: '1px solid #ffffff30', borderRadius: '8px'}} />
+            <Legend />
+            <Line type="monotone" dataKey="tour1" stroke="#f59e0b" name="Tour 1 (%)" strokeWidth={3} dot={{r: 6}} />
+            <Line type="monotone" dataKey="tour2" stroke="#06b6d4" name="Tour 2 (%)" strokeWidth={3} dot={{r: 6}} />
+          </LineChart>
+        </ResponsiveContainer>
+        <div className="mt-6 p-4 bg-yellow-900/50 rounded-xl border-l-4 border-yellow-500">
+          <p className="font-semibold text-yellow-200">
+            La participation en 2020 a chuté à un niveau historiquement bas. La mobilisation sera le facteur déterminant de 2026.
+          </p>
+        </div>
+      </div>
+
+      {/* Graphique de l'alternance */}
+      <div className="bg-gradient-to-br from-slate-700 to-slate-800 p-8 rounded-2xl shadow-2xl animate-fadeIn border-t-4 border-pink-500">
+        <h3 className="text-2xl font-bold mb-6 text-white">🔄 Alternance gauche-droite (Résultat T2)</h3>
+        <ResponsiveContainer width="100%" height={320}>
+          <BarChart data={evolutionPolitique}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#ffffff30" />
+            <XAxis dataKey="annee" stroke="#fff" />
+            <YAxis domain={[0, 100]} stroke="#fff" />
+            <Tooltip contentStyle={{backgroundColor: BACKGROUND_COLOR, border: '1px solid #ffffff30', borderRadius: '8px'}} />
+            <Legend />
+            <Bar dataKey="DVG" fill="#06b6d4" name="Divers Gauche (%)" radius={[8, 8, 0, 0]} />
+            <Bar dataKey="DVD" fill="#8b5cf6" name="Divers Droite / Allié (%)" radius={[8, 8, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+
+  // 2. Vue Acteurs Historiques et Démographie
+  const renderActeurs = () => (
+    <div className="space-y-8 animate-fadeIn">
+      <div className="bg-gradient-to-r from-teal-600 to-cyan-700 text-white p-8 rounded-3xl shadow-2xl transform hover:scale-[1.01] transition-all duration-300">
+        <h2 className="text-4xl font-extrabold mb-3">👤 Acteurs et Facteur Démographique</h2>
+        <p className="text-teal-100 text-lg">Analyse des dynasties et de l'évolution de la base électorale</p>
+      </div>
+        
+      {acteursHistorique.map((acteur, idx) => (
+        <div key={idx} className="bg-gradient-to-br from-slate-700 to-slate-800 p-8 rounded-2xl shadow-2xl transform hover:scale-[1.02] transition-all duration-300 border-l-8" style={{borderColor: acteur.tendance === 'rise' ? '#10b981' : '#ec4899'}}>
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-2xl font-bold text-white">{acteur.nom}</h3>
+            <div className={`flex items-center gap-2 px-4 py-2 rounded-xl ${
+              acteur.tendance === 'rise' ? 'bg-green-600' : 'bg-red-600'
+            } animate-pulse`}>
+              {acteur.tendance === 'rise' ? <TrendingUp size={20} className="text-white" /> : <TrendingDown size={20} className="text-white" />}
+              <span className="font-bold text-white">{acteur.tendance === 'rise' ? '📈 En hausse' : '📉 En déclin'}</span>
+            </div>
+          </div>
+
+          <div className="mb-6">
+            <ResponsiveContainer width="100%" height={220}>
+              <LineChart data={acteur.periodes}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff20" />
+                <XAxis dataKey="annee" stroke="#fff" />
+                <YAxis domain={[0, 70]} stroke="#fff" />
+                <Tooltip contentStyle={{backgroundColor: BACKGROUND_COLOR, border: '1px solid #ffffff30', borderRadius: '8px'}} />
+                <Line type="monotone" dataKey="resultat" stroke={acteur.tendance === 'rise' ? '#10b981' : '#ec4899'} name="Résultat / Force (%)" strokeWidth={4} dot={{r: 8}} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="p-5 rounded-xl" style={{backgroundColor: acteur.tendance === 'rise' ? '#10b98120' : '#ec489920'}}>
+            <p className="text-white font-semibold"><strong>💡 Analyse :</strong> {acteur.analyse}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
+  // 3. Vue Projections 2026
+  const renderProjection2026 = () => (
+    <div className="space-y-8 animate-fadeIn">
+      <div className="bg-gradient-to-r from-yellow-500 via-orange-500 to-red-600 text-white p-8 rounded-3xl shadow-2xl animate-pulse transform hover:scale-[1.01] transition-all duration-300">
+        <div className="flex items-center gap-4 mb-3">
+          <Target className="text-white" size={40} />
+          <h2 className="text-4xl font-extrabold text-white">🔮 Projections Municipales 2026</h2>
+        </div>
+        <p className="text-yellow-100 text-lg">Scénario de Premier Tour (Fragmentation) et clés de victoire</p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Cartes Candidats et Score T1 */}
+        <div className="lg:col-span-1 space-y-6">
+          <h3 className="text-2xl font-bold text-white mb-4">Candidatures et Forces en Présence (T1)</h3>
+          {candidats2026.map((candidat, idx) => (
+            <div 
+              key={idx} 
+              className="bg-gradient-to-br from-slate-800 to-slate-900 p-6 rounded-2xl shadow-2xl border-l-4 transform hover:scale-105 transition-all duration-300"
+              style={{borderColor: candidat.couleur}}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h4 className="text-xl font-bold text-white">{candidat.nom}</h4>
+                  <p className="text-gray-400 font-semibold">{candidat.parti} • {candidat.statut}</p>
+                </div>
+                <div className="text-right">
+                  <div className="text-4xl font-extrabold" style={{color: candidat.couleur}}>
+                    {candidat.projectionT1}%
+                  </div>
+                  <div className="text-sm text-gray-400">Projection T1</div>
+                </div>
+              </div>
+
+              {candidat.projectionT2 && (
+                <div className="mb-4 p-3 bg-gradient-to-r from-green-600/70 to-emerald-600/70 rounded-xl animate-pulse">
+                  <div className="flex items-center justify-between">
+                    <span className="text-white font-bold">🎯 Projection Tour 2</span>
+                    <span className="text-2xl font-bold text-white">{candidat.projectionT2}%</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Radar Chart for Strengths */}
+              <div className="mb-4">
+                <ResponsiveContainer width="100%" height={180}>
+                  <RadarChart data={[
+                    { metric: 'Force', value: candidat.force, fullMark: 100 },
+                    { metric: 'Notoriété', value: candidat.notoriete, fullMark: 100 },
+                    { metric: 'Ancrage', value: candidat.ancrage, fullMark: 100 },
+                    { metric: 'Dynamique', value: candidat.dynamique, fullMark: 100 }
+                  ]}>
+                    <PolarGrid stroke="#ffffff30" />
+                    <PolarAngleAxis dataKey="metric" stroke="#fff" fontSize={12} />
+                    <PolarRadiusAxis domain={[0, 100]} stroke="#fff" axisLine={false} tick={false} />
+                    <Radar dataKey="value" stroke={candidat.couleur} fill={candidat.couleur} fillOpacity={0.4} />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div className="p-4 rounded-xl text-sm text-white" style={{backgroundColor: candidat.couleur + '20'}}>
+                <p><strong>Analyse :</strong> {candidat.analyse}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Graphiques et Synthèse Stratégique */}
+        <div className="lg:col-span-1 space-y-6">
+          {/* Bar Chart T1 */}
+          <div className="bg-gradient-to-br from-purple-700 to-indigo-800 p-8 rounded-2xl shadow-2xl border-l-4 border-indigo-400">
+            <h3 className="text-2xl font-bold text-white mb-6">Baromètre T1 - Fragmentation Totale</h3>
+            <ResponsiveContainer width="100%" height={350}>
+              <BarChart data={candidats2026.sort((a, b) => b.projectionT1 - a.projectionT1)} margin={{top: 20, right: 30, left: 20, bottom: 5}}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff30" />
+                <XAxis dataKey="nom" stroke="#fff" angle={-25} textAnchor="end" height={100} interval={0} />
+                <YAxis stroke="#fff" />
+                <Tooltip contentStyle={{backgroundColor: BACKGROUND_COLOR, border: '1px solid #ffffff30', borderRadius: '8px'}} />
+                <Bar dataKey="projectionT1" name="Projection T1 (%)" radius={[10, 10, 0, 0]}>
+                  {candidats2026.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.couleur} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Doughnut Chart Blocs */}
+          <div className="bg-gradient-to-br from-slate-700 to-slate-800 p-8 rounded-2xl shadow-2xl border-l-4 border-cyan-400">
+            <h3 className="text-2xl font-bold text-white mb-6">Répartition des Blocs Politiques (T1)</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={blocsPolitiques2026}
+                  dataKey="pourcentage"
+                  nameKey="nom"
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={120}
+                  fill="#8884d8"
+                  paddingAngle={5}
+                  labelLine={false}
+                  label={({ nom, pourcentage }) => `${nom.split(' ')[0]} ${pourcentage}%`}
+                >
+                  {blocsPolitiques2026.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.couleur} />
+                  ))}
+                </Pie>
+                <Tooltip contentStyle={{backgroundColor: BACKGROUND_COLOR, border: '1px solid #ffffff30', borderRadius: '8px'}} />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Synthèse Stratégique */}
+          <div className="bg-gradient-to-br from-green-600 to-emerald-700 p-8 rounded-2xl shadow-xl border-l-4 border-yellow-300">
+            <h3 className="text-2xl font-bold text-white mb-4 flex items-center gap-3"><Clock size={24} /> Clés de la Victoire (T2)</h3>
+            <ul className="space-y-3 text-white font-semibold">
+              <li className="flex items-start gap-2">
+                <span className="text-yellow-300 mt-1">1.</span>
+                <p><strong>Mobilisation :</strong> Le Bloc Bedier doit maximiser le report des voix DVG (Fruteau, Divers) pour compenser l'alliance à droite.</p>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-yellow-300 mt-1">2.</span>
+                <p><strong>Facteur RN :</strong> L'attitude du bloc J.M. Virapoullé vis-à-vis du score élevé de L. Virapoullé sera décisive pour le report des voix DVD.</p>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-yellow-300 mt-1">3.</span>
+                <p><strong>Volatilité :</strong> La captation du vote jeune et des nouveaux habitants par le discours de "rupture" (Soc. Civile/Écolo) est critique.</p>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // 4. Vue Détaillée par Année
+  const renderDetail = () => {
+    const data = electionData[selectedYear];
+    
+    return (
+      <div className="space-y-8 animate-fadeIn">
+        <div className="bg-gradient-to-r from-purple-600 to-indigo-700 text-white p-8 rounded-3xl shadow-2xl">
+            <h2 className="text-4xl font-extrabold mb-3">🔎 Résultats Détaillés - {selectedYear}</h2>
+            <p className="text-purple-100 text-lg">Analyse des scores, des sièges et de la participation</p>
+        </div>
+
+        {/* Boutons de sélection d'année */}
+        <div className="flex flex-wrap gap-4 mb-6">
+          {['2008', '2014', '2020'].map(year => (
+            <button
+              key={year}
+              onClick={() => setSelectedYear(year)}
+              className={`px-6 py-3 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 ${
+                selectedYear === year 
+                  ? 'bg-gradient-to-r from-pink-600 to-red-600 text-white shadow-2xl scale-105' 
+                  : 'bg-gradient-to-r from-slate-600 to-slate-700 text-white hover:from-slate-500 hover:to-slate-600'
+              }`}
+            >
+              {year}
+            </button>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Tour 1 Pie Chart */}
+          <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-6 rounded-2xl shadow-2xl border-l-4 border-blue-300">
+            <h3 className="text-2xl font-bold mb-6 text-white">🗳️ Tour 1 - Répartition des Votes</h3>
+            <ResponsiveContainer width="100%" height={320}>
+              <PieChart>
+                <Pie
+                  data={data.tour1}
+                  dataKey="pourcentage"
+                  nameKey="candidat"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={120}
+                  label={(entry) => `${entry.candidat.split(' ')[0]} ${entry.pourcentage}%`}
+                  labelLine={true}
+                >
+                  {data.tour1.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip content={CustomTooltip} />
+                <Legend layout="vertical" align="right" verticalAlign="middle" wrapperStyle={{color: 'white'}} />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="mt-4 space-y-2">
+              {data.tour1.map((entry, index) => (
+                <div key={index} className="flex justify-between items-center text-white p-2 rounded-lg" style={{backgroundColor: COLORS[index % COLORS.length] + '20'}}>
+                  <span className="font-semibold" style={{color: COLORS[index % COLORS.length]}}>{entry.candidat} ({entry.parti})</span>
+                  <span className="font-bold">{entry.pourcentage}% ({entry.voix} voix)</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Tour 2 Results & Seats */}
+          <div className="bg-gradient-to-br from-emerald-600 to-green-700 p-6 rounded-2xl shadow-2xl border-l-4 border-green-300">
+            <h3 className="text-2xl font-bold mb-6 text-white">🏆 Tour 2 - Élus et Sièges</h3>
+            <div className="space-y-4">
+              {data.tour2.map((entry, index) => (
+                <div key={index} className={`p-4 rounded-xl shadow-lg border-l-8 ${entry.elu ? 'border-yellow-300 bg-green-900/70' : 'border-red-300 bg-slate-800/70'} transform hover:scale-[1.03] transition-all`}>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xl font-bold text-white">
+                      {entry.candidat}
+                      {entry.elu && <span className="ml-3 px-3 py-1 text-sm rounded-full bg-yellow-400 text-black font-extrabold">(Maire Élu)</span>}
+                    </span>
+                    <span className="text-3xl font-extrabold text-white">{entry.pourcentage}%</span>
+                  </div>
+                  <p className="text-sm text-gray-200 mt-1">{entry.parti}</p>
+                  <p className="text-sm text-gray-300">Sièges au Conseil : <span className="font-bold text-lg text-yellow-300">{entry.sieges}</span></p>
+                  <p className="text-xs text-gray-400">Voix : {entry.voix}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Participation Stats Card */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-slate-700 p-6 rounded-2xl shadow-xl border-l-4 border-cyan-400">
+            <h4 className="text-xl font-bold text-white mb-3 flex items-center gap-2"><Users size={20} /> Taux de participation</h4>
+            <div className="flex justify-around text-center">
+              <div className="p-4 bg-slate-600 rounded-xl w-5/12">
+                <p className="text-3xl font-bold text-cyan-400">{data.participation.tour1}%</p>
+                <p className="text-gray-300">Tour 1</p>
+              </div>
+              <div className="p-4 bg-slate-600 rounded-xl w-5/12">
+                <p className="text-3xl font-bold text-pink-400">{data.participation.tour2}%</p>
+                <p className="text-gray-300">Tour 2</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-slate-700 p-6 rounded-2xl shadow-xl border-l-4 border-purple-400">
+            <h4 className="text-xl font-bold text-white mb-3 flex items-center gap-2"><Award size={20} /> Nombre de votants</h4>
+            <div className="flex justify-around text-center">
+              <div className="p-4 bg-slate-600 rounded-xl w-5/12">
+                <p className="text-3xl font-bold text-purple-400">{data.votants.tour1}</p>
+                <p className="text-gray-300">Tour 1</p>
+              </div>
+              <div className="p-4 bg-slate-600 rounded-xl w-5/12">
+                <p className="text-3xl font-bold text-indigo-400">{data.votants.tour2}</p>
+                <p className="text-gray-300">Tour 2</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+  
+  // Rendu principal avec la navigation
+  return (
+    <div className="min-h-screen p-4 sm:p-8 font-inter" style={{ backgroundColor: BACKGROUND_COLOR }}>
+      <div className="max-w-7xl mx-auto">
+        {/* Titre et Navigation */}
+        <header className="py-6 mb-8 border-b-2 border-slate-700">
+          <h1 className="text-4xl sm:text-5xl font-extrabold text-white text-center">
+            Analyse Électorale : <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500">Saint-André 2026</span>
+          </h1>
+          <p className="text-center text-slate-400 mt-2 text-lg">Simulation et rétrospective des enjeux municipaux.</p>
+        </header>
+
+        {/* Barre de Navigation */}
+        <nav className="flex flex-wrap justify-center gap-4 mb-10">
+          {[
+            { id: 'projection2026', label: '🔮 Projection 2026' },
+            { id: 'overview', label: '📊 Vue d\'ensemble Historique' },
+            { id: 'acteurs', label: '👤 Acteurs & Démographie' },
+            { id: 'detail', label: '📈 Résultats Détaillés (2008-2020)' }
+          ].map(item => (
+            <button
+              key={item.id}
+              onClick={() => setViewMode(item.id)}
+              className={`px-5 py-2.5 rounded-full font-bold text-sm transition-all duration-300 transform hover:scale-105 shadow-lg ${
+                viewMode === item.id
+                  ? 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white border-2 border-white'
+                  : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
+        </nav>
+
+        {/* Contenu dynamique */}
+        <main>
+          {viewMode === 'overview' && renderOverview()}
+          {viewMode === 'acteurs' && renderActeurs()}
+          {viewMode === 'projection2026' && renderProjection2026()}
+          {viewMode === 'detail' && renderDetail()}
+        </main>
+      </div>
+      <footer className="mt-10 py-6 text-center text-slate-500 border-t border-slate-700">
+        Analyse réalisée avec Recharts et Tailwind CSS. Données de simulation basées sur les résultats historiques.
+      </footer>
+    </div>
+  );
+};
+
+export default App;
